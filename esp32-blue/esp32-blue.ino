@@ -48,6 +48,7 @@ class ConnectionServerCallbacks: public BLEServerCallbacks {
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
       Serial.println("Disconnected");
+      ESP.restart();
     }
 };
 
