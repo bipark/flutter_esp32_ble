@@ -24,7 +24,7 @@ class _mainPage extends State<MainPage> {
 
   void _startScan() async {
     _scanList = [];
-    var scanSubscription = FlutterBlue.instance.scan().listen((scanResult) {
+    await FlutterBlue.instance.scan().listen((scanResult) {
       if (scanResult.device.name == 'ESP32') {
         print(scanResult.device.name);
         setState(() {
