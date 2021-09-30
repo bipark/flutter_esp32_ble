@@ -9,9 +9,11 @@ class MainPage extends StatefulWidget {
 }
 
 class _mainPage extends State<MainPage> {
+  List<ScanResult> _scanList = [];
 
   @override
   void initState() {
+    _startScan();
     super.initState();
   }
 
@@ -20,59 +22,56 @@ class _mainPage extends State<MainPage> {
     super.dispose();
   }
 
+  void _startScan() async {
+    _scanList = [];
+    var scanSubscription = FlutterBlue.instance.scan().listen((scanResult) {
+      if (scanResult.device.name == 'ESP32') {
+        print(scanResult.device.name);
+        setState(() {
+          _scanList.add(scanResult);
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('BlueTooth'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.bluetooth),
-            onPressed: () {
-              FlutterBlue.instance.startScan(timeout: Duration(seconds: 4));
-            },
-          ),
-        ],
-      ),
-      body: StreamBuilder<BluetoothState>(
-        stream: FlutterBlue.instance.state,
-        initialData: BluetoothState.unknown,
-        builder: (context, snapshot) {
-          final state = snapshot.data;
-          if (state == BluetoothState.on) {
-            return deviceList();
-          } else {
-            return Center(
-              child: Text("BT 사용불가"),
-            );
-          }
-        },
-      )
-    );
+        appBar: AppBar(
+          title: const Text('Devices'),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: _startScan,
+            ),
+          ],
+        ),
+        body: deviceList());
   }
 
   Widget deviceList() {
-    return StreamBuilder<List<ScanResult>>(
-      stream: FlutterBlue.instance.scanResults,
-      initialData: [],
-      builder: (context, snapshot) {
-        return SingleChildScrollView(
-          child: Column(
-            children: snapshot.data!.map((ScanResult r)=>deviceTile(r)).toList(),
-          )
-        );
-      }
-    );
-  }
-
-  Widget deviceTile(ScanResult r) {
-    return ListTile(
-      title: Text(r.device.name),
-      subtitle: Text(r.device.toString()),
-      trailing: GestureDetector(onTap: (){
-        // r.device.connect();
-        Navigator.push(context, MaterialPageRoute(builder: (context) => Device(r.device)),);
-      },child: Icon(Icons.bluetooth, size: 40,),),
-    );
+    if (_scanList.length > 0) {
+      return ListView.builder(
+          itemCount: _scanList.length,
+          itemBuilder: (context, index) {
+            ScanResult r = _scanList[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Device(r.device)),
+                );
+              },
+              child: Card(
+                child: ListTile(
+                  title: Text(r.device.name),
+                  subtitle: Text(r.device.toString()),
+                ),
+              ),
+            );
+          });
+    } else {
+      return Center(child: CircularProgressIndicator());
+    }
   }
 }
